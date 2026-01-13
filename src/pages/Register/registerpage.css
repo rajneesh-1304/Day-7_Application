@@ -1,0 +1,107 @@
+* {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+body {
+  background-color: #f3f2ef;
+}
+
+.register_container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.register_form {
+  width: 420px;
+  padding: 32px 28px 36px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.register_heading {
+  font-size: 28px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 16px;
+}
+
+.register_main_form {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.MuiTextField-root {
+  margin-bottom: 14px;
+}
+
+.MuiButton-contained {
+  height: 44px;
+  border-radius: 24px;
+  font-weight: 600;
+  text-transform: none;
+  background-color: #0a66c2;
+}
+
+.MuiButton-contained:hover {
+  background-color: #004182;
+}
+
+.MuiButton-containedPrimary {
+  background-color: #0a66c2;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  font-size: 13px;
+  color: #6f6f6f;
+  margin: 14px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #d1d1d1;
+}
+
+.divider:not(:empty)::before {
+  margin-right: 8px;
+}
+
+.divider:not(:empty)::after {
+  margin-left: 8px;
+}
+
+.login {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: #000000;
+}
+
+.login_link {
+  color: #0a66c2;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login_link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .register_form {
+    width: 90%;
+    padding: 28px 20px;
+  }
+}

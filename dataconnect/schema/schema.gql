@@ -1,0 +1,35 @@
+type User @table {
+  displayName: String!
+  email: String
+  photoUrl: String
+  status: String
+  createdAt: Timestamp!
+}
+
+type Contact @table(key: ["user1", "user2"]) {
+  user1: User!
+  user2: User!
+  createdAt: Timestamp!
+}
+
+type Chat @table {
+  type: String!
+  name: String
+  description: String
+  createdAt: Timestamp!
+}
+
+type ChatMembership @table(key: ["chat", "user"]) {
+  chat: Chat!
+  user: User!
+  joinedAt: Timestamp!
+}
+
+type Message @table {
+  chat: Chat!
+  user: User!
+  content: String!
+  messageType: String
+  imageUrl: String
+  sentAt: Timestamp!
+}

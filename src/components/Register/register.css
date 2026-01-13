@@ -1,0 +1,9 @@
+.login{
+    margin-top: 25px;
+    font-size: 15px;
+}
+
+.login_link{
+    color: rgb(53, 134, 211);
+    cursor: pointer;
+}

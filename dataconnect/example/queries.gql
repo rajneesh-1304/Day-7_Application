@@ -1,0 +1,32 @@
+mutation CreateUser @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  user_insert(data: {
+    displayName: "New User",
+    email: "newuser@example.com",
+    createdAt_expr: "request.time"
+  })
+}
+
+query GetChats @auth(level: USER) {
+  chats {
+    id
+    name
+    type
+  }
+}
+
+mutation SendMessage($chatId: UUID!, $content: String!) @auth(level: USER) {
+  message_insert(data: {
+    chatId: $chatId,
+    userId_expr: "auth.uid",
+    content: $content,
+    messageType: "text",
+    sentAt_expr: "request.time"
+  })
+}
+
+query ListUsers @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  users {
+    id
+    displayName
+  }
+}

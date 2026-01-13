@@ -1,0 +1,184 @@
+*{
+  margin:0;
+  padding:0
+}
+
+body{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+.navbar{
+  top: 0;
+  position: fixed;
+  z-index: 10 ;
+  width: 93vw;
+  height: 4vh;
+  display: flex;
+  padding: 20px 60px;
+  justify-content: space-between;
+  background-color: white;
+  border-bottom: 3px solid  rgba(0, 0, 0, 0.2);
+}
+
+.heading{
+  font-weight: 900;
+}
+
+.search_bar{
+  width: 600px;
+  height: 30px;
+  border-radius: 10px;
+  border: 2px solid rgb(199, 198, 198);
+  padding: 5px;
+  padding-left: 10px;
+  background-color: rgb(241, 241, 241);
+}
+
+.cart_button{
+  border: 2px solid rgb(236, 233, 233);
+  padding: 6px 17px;
+  font-size: 18px;
+  border-radius: 10px;
+  background-color: rgb(255, 250, 250);
+  color: black;
+  cursor: pointer;
+}
+
+.card{
+  height: 325px;
+  width: 250px;
+  border-radius: 12px;  
+  background-color: rgb(235, 231, 231);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.home{
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  justify-content: center;
+  margin: 50px ;
+  margin-top: 100px;
+  gap: 50px;
+}
+
+.card_image{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  width: 250px;
+}
+
+.card_img{
+  height: 200px;
+  width: 200px;
+}
+
+.price{
+  width: 230px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.amount{
+  margin-left: 7px;
+  font-size: 15px;
+}
+
+.property{
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+.detail{
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0;
+  background-color: rgb(219, 218, 217);
+}
+
+.detail_left{
+  margin-top: 400px;
+  padding: 80px;
+  height: 70vh;
+  width: 50vw;
+}
+
+.detail_img{
+  height: 40vh;
+  width: 40vw;
+}
+
+.detail_right{
+  display:flex;
+  height: 40vh;
+  width: 40vw;
+  margin-right: 200px;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.detail_title{
+  font-size: 60px;
+  font: bold;
+}
+
+.detail_description{
+  font-size: 20px;
+  font: bold;
+}
+
+.detail_price{
+  font-size: 60px;
+}
+
+.product_detail{
+  padding: 5px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 2px solid rgb(196, 188, 188);
+}
+
+.cart_add{
+  display: flex;
+  gap: 5px;
+}
+
+.increment{
+  padding: 5px;
+  size: 8px;
+}
+.decrement{
+  padding: 5px;
+  size: 8px;
+ 
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin: 20px;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.login_space_on_front{
+  display: flex;
+
+  gap: 10px;
+}
