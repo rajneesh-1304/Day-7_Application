@@ -7,11 +7,11 @@ import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import './register.css'
-import { email, z } from 'zod';
+import { email, nanoid, z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Fragment, useEffect, useState } from 'react';
 import TextField from '@mui/material/TextField';
-import { register as registerUser } from '../../redux/slice/slice'
+import { handleCurrentUser } from '../../redux/slice/slice'
 import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
 import IconButton from '@mui/material/IconButton';
@@ -20,7 +20,7 @@ import Select from '@mui/material/Select';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { auth, provider, db } from '../../config/firebase';
 import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 
 
 const RegisterUserSchema = z.object({
@@ -69,39 +69,77 @@ export default function RegisterForm() {
     navigate('/');
   }
   const handleSignIn = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-      setSnackbarMessage('User Registered successfully!');
-      setSnackbarOpen(true);
-      setTimeout(() => {
-        navigate('/chat')
-      }, 1200);
-    } catch (error) {
-      setSnackbarMessage('User not registered');
-      setSnackbarOpen(true);
-    }
-  }
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    await setDoc(doc(db, 'auth', user.uid), {
+      id: user.uid,
+      name: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL,
+      isOnline: true, 
+      createdAt: serverTimestamp(),
+    });
+
+   dispatch(handleCurrentUser({
+  id: user.uid,
+  name: user.displayName || 'User',
+  email: user.email || '',
+  photoUrl: user.photoURL || null,
+}));
 
 
-  const onSubmit = async (data: RegisterFormInputs) => {
-    try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
-       const docRef = await addDoc(collection(db, 'auth'), {
-        name: data.name,
-        email: data.email,
-        password: data.password
-      });
-      dispatch(registerUser(data as any));
-      setSnackbarMessage('User created successfully!');
-      setSnackbarOpen(true);
-      setTimeout(() => {
-        navigate('/chat')
-      }, 1200);
-    } catch (error) {
-      setSnackbarMessage('User already exists');
-      setSnackbarOpen(true);
-    }
+    setSnackbarMessage('User Registered successfully!');
+    setSnackbarOpen(true);
+
+    setTimeout(() => navigate('/chat'), 1200);
+  } catch (error) {
+    setSnackbarMessage('User not registered');
+    setSnackbarOpen(true);
   }
+};
+
+
+
+ const onSubmit = async (data: RegisterFormInputs) => {
+  try {
+    const userr = await createUserWithEmailAndPassword(
+      auth,
+      data.email,
+      data.password
+    );
+
+    const firebase = userr.user;
+
+    await setDoc(doc(db, 'auth', firebase.uid), {
+      id: firebase.uid,
+      name: data.name,
+      email: firebase.email,
+      photoURL: null,
+      isOnline: true, 
+      createdAt: serverTimestamp(),
+    });
+
+    dispatch(handleCurrentUser({
+  id: firebase.uid,
+  name: data.name,
+  email: firebase.email || '',
+  photoUrl: null,
+}));
+
+
+    setSnackbarMessage('User created successfully!');
+    setSnackbarOpen(true);
+
+    setTimeout(() => navigate('/'), 1200);
+  } catch (error) {
+    setSnackbarMessage('User already exists');
+    setSnackbarOpen(true);
+  }
+};
+
+
   const {
     register,
     handleSubmit,

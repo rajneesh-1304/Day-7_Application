@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './chat.css';
 import IconButton from '@mui/material/IconButton';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -10,21 +10,19 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import { collection, getDocs } from 'firebase/firestore';
+import { addDoc, collection, getDocs, limit, onSnapshot, orderBy, query, updateDoc, doc, startAt, endAt, startAfter, } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../../redux/slice/slice';
-import Picker from 'emoji-picker-react'; 
+import { handleLogout as logout } from '../../redux/slice/slice';
+import Picker from 'emoji-picker-react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store'; 
+import { RootState } from '../../redux/store';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { Avatar } from '@mui/material';
+import { serverTimestamp } from "firebase/firestore";
 
-
-interface User {
-  id?: string;
-  name?: string;
-  email?: string;
-}
 
 interface Message {
   text: string;
@@ -32,52 +30,258 @@ interface Message {
 }
 
 const Chat = () => {
-  const [users, setUsers] = useState<User[]>([]);
+
+
+
+  const [users, setUsers] = useState<any[]>([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const currUser = useSelector((state: RootState) => state.currUser);
+  const [chatIddd, setChatIddd] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [lastVisibleUser, setLastVisibleUser] = useState<any>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout()); 
-    navigate('/login'); 
+  const getChatId = (id1: string, id2: string) => {
+    return id1 < id2 ? `${id1}_${id2}` : `${id2}_${id1}`;
   };
 
-  const getPost = async () => {
-    const postCol = collection(db, 'auth');
-    const postSnapshot = await getDocs(postCol);
-    const postList = postSnapshot.docs.map(doc => doc.data());
-    setUsers(postList);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
   };
 
   useEffect(() => {
-    getPost();
-  }, []);
+    if (!currUser) return;
 
-  const currUser = useSelector((state: RootState) => state.currUser);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const userRef = doc(db, "auth", currUser.id);
 
-  // User info popup state
-  const [showUserInfo, setShowUserInfo] = useState(false);
+    updateDoc(userRef, {
+      isOnline: true,
+    });
 
-  const sendMessage = () => {
-    if (!message.trim()) return;
-    setMessages([...messages, { text: message, sender: 'me' }]);
-    setMessage('');
-  };
+    return () => {
+      updateDoc(userRef, {
+        isOnline: false,
+      });
+    };
+  }, [currUser]);
+
+
+  useEffect(() => {
+    if (!currUser) return;
+
+    const q = collection(db, "auth");
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.id !== currUser.id) list.push(data);
+      });
+      setUsers(list);
+    });
+
+    return () => unsub();
+  }, [currUser]);
+
 
   const onEmojiClick = (emojiData: any) => {
     setMessage(prev => prev + emojiData.emoji);
+  };
+
+  const formatTime = (timestamp: any) => {
+    if (!timestamp) return "";
+    const date = timestamp.toDate();
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const fetchUsers = async (search = '', loadMore = false) => {
+    if (!currUser) return;
+
+    setLoadingMore(true);
+
+    let q: any;
+
+    if (search) {
+      q = query(
+        collection(db, "auth"),
+        orderBy("name"),
+        startAt(search),
+        endAt(search + "\uf8ff"),
+        limit(10)
+      );
+    } else {
+      q = query(
+        collection(db, "auth"),
+        orderBy("name"),
+        limit(10),
+        ...(lastVisibleUser && loadMore ? [startAfter(lastVisibleUser)] : [])
+      );
+    }
+
+    const snapshot = await getDocs(q);
+
+    const fetchedUsers: any[] = [];
+    snapshot.forEach(doc => {
+      const data = doc.data() as any;
+      if (data.id !== currUser.id) fetchedUsers.push(data);
+    });
+
+    if (loadMore) {
+      setUsers(prev => [...prev, ...fetchedUsers]);
+    } else {
+      setUsers(fetchedUsers);
+    }
+
+    setLastVisibleUser(snapshot.docs[snapshot.docs.length - 1]);
+    setLoadingMore(false);
+  };
+
+  useEffect(() => {
+    setLastVisibleUser(null);
+    fetchUsers(searchTerm, false);
+  }, [searchTerm]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom =
+      e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
+      e.currentTarget.clientHeight;
+
+    if (bottom && !loadingMore) {
+      fetchUsers(searchTerm, true);
+    }
+  };
+
+
+
+  const loadMessages = async (receiver: any) => {
+    if (!currUser) return;
+
+    setSelectedUser(receiver);
+    try {
+
+
+      const chatId = getChatId(currUser.id, receiver.id);
+      setChatIddd(chatId);
+
+      const realTimeMessage = query(collection(db, "chats", chatId, "messages")
+      );
+      const messages = await getDocs(realTimeMessage);
+      console.log('messages: ', messages);
+
+      const msgList: any[] = [];
+      messages.forEach((doc) => msgList.push(doc.data()));
+
+      setMessages(msgList);
+    } catch (err) {
+      console.log(err)
+    }
+  };
+
+  useEffect(() => {
+    if (!chatIddd) return;
+
+    const q = query(
+      collection(db, "chats", chatIddd, "messages"),
+      orderBy("createdAt")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgList: any[] = [];
+      snapshot.forEach((doc) => {
+        msgList.push({ id: doc.id, ...doc.data() });
+      });
+
+      setMessages(msgList);
+      scrollToBottom();
+    });
+
+    return () => unsubscribe();
+  }, [chatIddd]);
+
+  const sendMessage = async () => {
+    if (!message.trim() || !selectedUser || !currUser || !chatIddd) return;
+
+    const newMessage = {
+      text: message,
+      sender: currUser.id,
+      receiver: selectedUser.id,
+      createdAt: serverTimestamp(),
+    };
+
+    await addDoc(collection(db, "chats", chatIddd, "messages"), newMessage);
+
+    setMessage("");
+
   };
 
   return (
     <div className="page">
       <div className="topbar">
         <div className="top-left" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <IconButton onClick={() => setShowUserInfo(true)}>
-            <AccountCircleIcon fontSize="large" />
+          <IconButton onClick={handleClick}>
+            {currUser?.photoUrl ? (
+              <Avatar
+                src={currUser.photoUrl}
+                alt={currUser.name}
+                sx={{ width: 40, height: 40 }}
+              />
+            ) : (
+              <AccountCircleIcon fontSize="large" />
+            )}
           </IconButton>
+
+          <Menu
+            id="user-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem disabled sx={{ display: 'flex', gap: 1 }}>
+              {currUser?.photoUrl && (
+                <Avatar
+                  src={currUser.photoUrl}
+                  alt={currUser.name}
+                  sx={{ width: 32, height: 32 }}
+                />
+              )}
+              <strong>{currUser?.name || 'N/A'}</strong>
+            </MenuItem>
+
+            <MenuItem disabled>
+              {currUser?.email || 'N/A'}
+            </MenuItem>
+
+          </Menu>
+
           <span className="username">{currUser?.name}</span>
         </div>
 
@@ -86,42 +290,59 @@ const Chat = () => {
         </IconButton>
       </div>
 
-      <Dialog open={showUserInfo} onClose={() => setShowUserInfo(false)}>
-        <DialogTitle>User Info</DialogTitle>
-        <DialogContent>
-           <p><strong>Name:</strong> {currUser?.name || 'N/A'}</p>
-    <p><strong>Email:</strong> {currUser?.email || 'N/A'}</p>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowUserInfo(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-
       <div className="bottom">
-        <div className="left">
+        <div className="left" onScroll={handleScroll} style={{ overflowY: 'auto', height: '80vh' }}>
           <div className="chat-title">Chats</div>
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+            style={{
+      width: '100%',
+      margin: '10px auto',
+      padding: '5px 10px',
+      borderRadius: '15px',
+      border: '1px solid gray',
+      display: 'block'
+    }}
+          />
+
           {users.map(user => (
             <div
               key={user.id}
-              className={`chat-user ${selectedUser?.id === user.id ? 'active' : ''}`}
-              onClick={() => setSelectedUser(user)}
+              className={`chat-user ${selectedUser?.id === user.id ? "active" : ""}`}
+              onClick={() => loadMessages(user)}
             >
-              {user.email}
+              <div className="user-row">
+                <span>{user.name}</span>
+                <span className={`status ${user.isOnline ? "online" : "offline"}`}>
+                  {user.isOnline ? "Online" : "Offline"}
+                </span>
+              </div>
             </div>
           ))}
         </div>
 
+
         <div className="right">
           {selectedUser ? (
             <>
-              <div className="chat-header">{selectedUser.email}</div>
+              <div className="chat-header">{selectedUser.name}</div>
 
               <div className="chat-body">
-                {messages.map((msg, index) => (
-                  <div key={index} className={`message ${msg.sender}`}>
-                    {msg.text}
-                  </div>
-                ))}
+                {messages.map((msg, index) => {
+                  const isMe = msg.sender === currUser?.id;
+                  return (
+                    <div key={index} className={`ccc${isMe ? "me" : "them"}`}  >
+                      <div className="msg">
+                        <span className="textt">{msg.text}</span>
+                        <span className="times">{formatTime(msg.createdAt)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="chat-input">

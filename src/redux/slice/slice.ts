@@ -1,63 +1,37 @@
-import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface User {
+type AuthUser = {
   id: string;
   name: string;
   email: string;
-  password: string;
-}
+  photoUrl: string | null;
+};
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface UserState {
-  users: User[];
+type AuthState = {
   currUser: AuthUser | null;
   isAuthenticated: boolean;
-}
+};
 
-const initialState: UserState = {
-  users: [
-    { id: '1', name: 'Admin', email: 'admin@gmail.com', password: '12345678' },
-    { id: '2', name: 'Kumar', email: 'kumar@gmail.com', password: '12345678' },
-    { id: '3', name: 'ABC', email: 'abc@gmail.com', password: '12345678' },
-  ],
+const initialState: AuthState = {
   currUser: null,
   isAuthenticated: false,
 };
 
-const userSlice = createSlice({
-  name: 'users',
+const authSlice = createSlice({
+  name: 'auth',
   initialState,
   reducers: {
-    register: (
-      state,
-      action: PayloadAction<Omit<User, 'id'>>
-    ) => {
-      const newUser: User = {
-        id: nanoid(),
-        ...action.payload,
-      };
-
-      state.users.push(newUser);
-      state.currUser = newUser;
-      state.isAuthenticated = true;
-    },
-
-    login: (state, action: PayloadAction<AuthUser>) => {
+    handleCurrentUser(state, action: PayloadAction<AuthUser>) {
       state.currUser = action.payload;
       state.isAuthenticated = true;
     },
 
-    logout: (state) => {
+    handleLogout(state) {
       state.currUser = null;
       state.isAuthenticated = false;
     },
   },
 });
 
-export const { register, login, logout } = userSlice.actions;
-export default userSlice.reducer;
+export const { handleCurrentUser, handleLogout } = authSlice.actions;
+export default authSlice.reducer;

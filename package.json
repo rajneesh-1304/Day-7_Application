@@ -4,8 +4,6 @@
   "private": true,
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
-    "@emoji-mart/data": "^1.2.1",
-    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",

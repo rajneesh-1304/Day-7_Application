@@ -12,10 +12,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../redux/slice/slice';
+import { handleCurrentUser} from '../../redux/slice/slice';
 import './login.css';
-import { auth, provider } from '../../config/firebase';
+import { auth, db, provider } from '../../config/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const LoginUserSchema = z.object({
   email: z
@@ -40,7 +41,6 @@ interface RootState {
 export default function LoginForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const users = useSelector((state: RootState) => state.users.users);
   const isAuthenticated = useSelector((state: RootState) => state.users.isAuthenticated);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -60,46 +60,66 @@ export default function LoginForm() {
   const handleTogglePassword = () => setShowPassword(prev => !prev);
 
   const handleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    dispatch(
+  handleCurrentUser({
+    id: user.uid,
+    name: user.displayName || 'User',
+    email: user.email || '',
+    photoUrl: user.photoURL || null,
+  })
+);
+
+
+    setSnackbarMessage('Login successful!');
+    setSnackbarOpen(true);
+    setTimeout(() => navigate('/chat'), 1200);
+  } catch {
+    setSnackbarMessage('User not registered');
+    setSnackbarOpen(true);
+  }
+};
+
+
+ const onSubmit = async (data: LoginFormInputs) => {
+  try {
+    const response = await signInWithEmailAndPassword(
+      auth,
+      data.email,
+      data.password
+    );
+
+    const user = response.user;
+
+    const userDoc = await getDoc(doc(db, "auth", user.uid));
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log(userData)
 
       dispatch(
-        login({
-          id: result.user.uid,
-          name: result.user.displayName || 'User',
-          email: result.user.email || '',
+        handleCurrentUser({
+          id: user.uid,
+          name: userData.name,
+          email: user.email || '',
+          photoUrl: userData.photoURL || null,
         })
       );
-
       setSnackbarMessage('Login successful!');
-      setSnackbarOpen(true);
-      setTimeout(() => navigate('/chat'), 1200);
-    } catch {
-      setSnackbarMessage('User not registered');
-      setSnackbarOpen(true);
+    setSnackbarOpen(true);
+    setTimeout(() => navigate('/chat'), 1200);
     }
-  };
 
-  const onSubmit = async (data: LoginFormInputs) => {
-    try {
-      const response = await signInWithEmailAndPassword(auth, data.email, data.password);
+  } catch (error) {
+    console.error(error);
+    setSnackbarMessage('User not registered');
+    setSnackbarOpen(true);
+  }
+};
 
-      dispatch(
-        login({
-          id: response.user.uid,
-          name: response.user.email?.split('@')[0] || 'User',
-          email: response.user.email || '',
-        })
-      );
-
-      setSnackbarMessage('Login successful!');
-      setSnackbarOpen(true);
-      setTimeout(() => navigate('/chat'), 1200);
-    } catch {
-      setSnackbarMessage('User not registered');
-      setSnackbarOpen(true);
-    }
-  };
 
   useEffect(() => {
     if (isAuthenticated) navigate('/');
