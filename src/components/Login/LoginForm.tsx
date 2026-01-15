@@ -16,7 +16,7 @@ import { handleCurrentUser} from '../../redux/slice/slice';
 import './login.css';
 import { auth, db, provider } from '../../config/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 const LoginUserSchema = z.object({
   email: z
@@ -74,11 +74,14 @@ export default function LoginForm() {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    const userRef = doc(db, "auth", user.uid);
-
-    await updateDoc(userRef, {
-      isOnline: true,
-    });
+    await setDoc(doc(db, 'auth', user.uid), {
+          id: user.uid,
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          isOnline: true, 
+          createdAt: serverTimestamp(),
+        });
 
     dispatch(
   handleCurrentUser({
@@ -116,7 +119,6 @@ export default function LoginForm() {
 
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log(userData)
       await updateDoc(userRef, {
         isOnline: true,
       });
@@ -130,8 +132,8 @@ export default function LoginForm() {
         })
       );
       setSnackbarMessage('Login successful!');
-    setSnackbarOpen(true);
-    setTimeout(() => navigate('/chat'), 1200);
+      setSnackbarOpen(true);
+      setTimeout(() => navigate('/chat'), 1200);
     }
 
   } catch (error) {
