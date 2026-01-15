@@ -16,7 +16,7 @@ import { handleCurrentUser} from '../../redux/slice/slice';
 import './login.css';
 import { auth, db, provider } from '../../config/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 const LoginUserSchema = z.object({
   email: z
@@ -35,13 +35,24 @@ interface UserState {
 }
 
 interface RootState {
-  users: UserState;
+  auth: {
+    currUser: {
+      id: string;
+      name: string;
+      email: string;
+      photoUrl: string | null;
+    } | null;
+    isAuthenticated: boolean;
+  };
 }
+
 
 export default function LoginForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const isAuthenticated = useSelector((state: RootState) => state.users.isAuthenticated);
+  const isAuthenticated = useSelector(
+  (state: any) => state.isAuthenticated
+);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -63,6 +74,11 @@ export default function LoginForm() {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
+    const userRef = doc(db, "auth", user.uid);
+
+    await updateDoc(userRef, {
+      isOnline: true,
+    });
 
     dispatch(
   handleCurrentUser({
@@ -94,11 +110,16 @@ export default function LoginForm() {
 
     const user = response.user;
 
-    const userDoc = await getDoc(doc(db, "auth", user.uid));
+     const userRef = doc(db, "auth", user.uid);
+
+    const userDoc = await getDoc(userRef);
 
     if (userDoc.exists()) {
       const userData = userDoc.data();
       console.log(userData)
+      await updateDoc(userRef, {
+        isOnline: true,
+      });
 
       dispatch(
         handleCurrentUser({
@@ -119,11 +140,6 @@ export default function LoginForm() {
     setSnackbarOpen(true);
   }
 };
-
-
-  useEffect(() => {
-    if (isAuthenticated) navigate('/');
-  }, [isAuthenticated, navigate]);
 
   const handleRegisterNavigate = () => navigate('/register');
 

@@ -22,6 +22,9 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { Avatar } from '@mui/material';
 import { serverTimestamp } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { auth } from "../../config/firebase";
+
 
 
 interface Message {
@@ -65,10 +68,25 @@ const Chat = () => {
   };
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+  try {
+    if (!currUser) return;
+
+    const userRef = doc(db, "auth", currUser.id);
+
+    await updateDoc(userRef, {
+      isOnline: false,
+    });
+
+    await signOut(auth);
+
     dispatch(logout());
-    navigate('/login');
-  };
+    navigate("/login");
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
+
 
   useEffect(() => {
     if (!currUser) return;
