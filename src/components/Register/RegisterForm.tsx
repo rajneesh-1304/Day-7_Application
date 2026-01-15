@@ -45,17 +45,25 @@ const RegisterUserSchema = z.object({
     .regex(/[a-z]/, "Must contain at least one lowercase letter")
     .regex(/[0-9]/, "Must contain at least one number")
     .regex(/[!@#$%^&*]/, "Must contain at least one special character"),
-});
+
+    confirmPassword: z
+      .string()
+      .min(1, "Confirm password is required"),
+}).refine((data: any) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 
 
 type RegisterFormInputs = z.infer<typeof RegisterUserSchema>;
 
 export default function RegisterForm() {
-  const users = useSelector((state: { users: { users: RegisterFormInputs[] } }) => state.users.users);
   const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
-
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const handleTogglePassword = () => setShowPassword(prev => !prev);
+  const handleToggleConfirmPassword = () => setShowConfirmPassword(prev=>!prev);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const handleClose = (event: React.SyntheticEvent | Event, reason?: string) => {
@@ -152,9 +160,6 @@ export default function RegisterForm() {
       password: '',
     },
   });
-  useEffect(() => {
-    console.log(users)
-  }, [users])
   return (
     <div>
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -214,6 +219,26 @@ export default function RegisterForm() {
         }}
       />
     </FormControl>
+
+    <FormControl variant="standard" fullWidth>
+  <TextField
+    label="Confirm Password"
+    type={showConfirmPassword ? "text" : "password"}
+    variant="outlined"
+    {...register("confirmPassword")}
+    error={!!errors.confirmPassword}
+    helperText={errors.confirmPassword?.message}
+    InputProps={{
+      endAdornment: (
+        <InputAdornment position="end">
+          <IconButton onClick={handleToggleConfirmPassword} edge="end">
+            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+          </IconButton>
+        </InputAdornment>
+      ),
+    }}
+  />
+</FormControl>
 
           <Button variant="contained" sx={{ mt: 2 }} type="submit" >
             Register
